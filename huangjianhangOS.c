@@ -2,6 +2,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <cstdlib>
+#include <sys/stat.h>
 #include <unistd.h>
 
 
@@ -14,7 +15,7 @@ void print(string path);
 void mylist();
 void mypwd();
 void mycd(string s);
-
+void mymkdir(string s);
 
 int main(){
 	string str;
@@ -29,10 +30,10 @@ int main(){
 		if(str == "mylist") mylist();
 		if(str == "mypwd") mypwd();
 		if(str.find("mycd") == 0) mycd(str);
-		
-		if(!flag) cout<<"no "<<str<<" command!"<<endl;
-	}
+		if(str.find("mymkdir") == 0) mymkdir(str);
 
+		if(!flag) cout<<"ERROR: no "<<str<<" command!"<<endl;
+	}
 	return 0;
 }
 
@@ -67,14 +68,29 @@ void mypwd(){
 }
 
 void mycd(string s){
+
+	int spaceNum = 0;
 	char buf[999], chPath[999];
 	// 将字符串变成字符数组
 	strcpy(buf, s.c_str());
 	// 提取路径
 	for(int i=5; i<s.length(); i++){
-		chPath[i-5] = buf[i];
+		if(buf[i] != ' '){
+			chPath[i-5-spaceNum] = buf[i];
+		}
+		else spaceNum++;
 	}
 	// 改变路径
-	chdir(chPath);
+	if(chdir(chPath) == -1){
+		cout<<"ERROR: PATH "<<chPath<<" no exit!"<<endl;
+	}
+	flag = 1;
+}
+
+void mymkdir(string s){
+	s.erase(0,7);
+	if(mkdir(s.c_str(), 777) == -1){
+		cout<<"Create Dir error! "<<endl;
+	}
 	flag = 1;
 }
