@@ -74,7 +74,7 @@ void mylist(){
 		dt = readdir(dp);
 
 		if(dt == NULL) break;
-		if(dt->d_name[0] != '.'){
+		if(strcmp(dt->d_name, "..") != 0 &&  strcmp(dt->d_name, ".") != 0){
 			cout<<dt->d_name<<endl;
 		}
 	}
