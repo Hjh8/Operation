@@ -164,6 +164,7 @@ void mymkdir(string s){
 			p[i] = '\0';
 			// 目录不存在 并且 存在 -p 就创建
 			if(access(p, F_OK) != 0 && PIndex>=0 && PIndex<10){
+				// 0777表示文件所有者、文件所有者所在的组的*用户、*所有用户，都有权限进行读、写、执行的操作。
 				mkdir(p, 0777);
 			}
 			else{
