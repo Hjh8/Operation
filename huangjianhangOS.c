@@ -16,9 +16,12 @@ using namespace std;
 void print(string path);
 void mylist();
 void mypwd();
-void mycd(string s);
+void mycd(const char* s);
 void mymkdir(string s);
 void myrmdir(char* p, int PIndex, int iteration);
+void myrename(string oldName, string newName);
+void mycopy(string name1, string name2);
+void myfind(char* path, string searchName);
 
 // 标记：是否属于命令
 int flag;
@@ -36,7 +39,7 @@ int main(){
 		if(str == "myexit") exit(0);
 		else if(str == "mylist") mylist();
 		else if(str == "mypwd") mypwd();
-		else if(str.find("mycd") == 0) mycd(str);
+		else if(str.find("mycd") == 0) mycd(str.erase(0,5).c_str());
 		else if(str.find("mymkdir") == 0) mymkdir(str.erase(0,7));
 		else if(str.find("myrmdir") == 0) {
 			char p[999];
@@ -48,6 +51,33 @@ int main(){
 			strncpy(p, s.substr(index+1).c_str(), 999);
 			myrmdir(p, PIndex, 0);
 		}
+		else if(str.find("myrename") == 0){
+			int first = str.find_first_of(' ');
+			int second = str.find_last_of(' ');
+			string oldV = str.substr(first+1, second-first-1);
+			string newV = str.substr(second+1);
+			myrename(oldV, newV);
+		}
+		else if(str.find("mycopy") == 0){
+			int first = str.find_first_of(' ');
+			int second = str.find_last_of(' ');
+			string s1 = str.substr(first+1, second-first-1);
+			string s2 = str.substr(second+1);
+			mycopy(s1, s2);
+		}
+		else if(str.find("myfind") == 0 && str.find(" -name ") != string::npos){
+			int first = str.find_first_of(' ');
+			int second = str.substr(first+1).find_first_of(' ');
+
+			string path = str.substr(first+1, second);
+			int third = str.find_last_of(' ');
+			string searchName = str.substr(third+1);
+			char temp[99];
+			strncpy(temp, path.c_str(), 99);
+
+			myfind(temp, searchName);
+			flag = 1;
+		}
 
 		if(!flag) cout<<"ERROR: no "<<str<<" command!"<<endl;
 	}
@@ -55,8 +85,8 @@ int main(){
 }
 
 /*
+	仿terminal输出
 	@Param string path : 当前路径
-	仿shell输出
 */
 void print(string path){
 	cout<<"user@ubuntu:"<<path<<"$ ";
@@ -93,40 +123,39 @@ void mypwd(){
 }
 
 /*
-	@Param string s : 要改变的目录路径
 	改变当前工作路径
+	@Param string s : 要改变的目录路径
 */
-void mycd(string s){
+void mycd(const char* s){
 	int spaceNum = 0, i;
-	char buf[999], chPath[999];
-	// 将字符串变成字符数组
-	strcpy(buf, s.c_str());
+	char chPath[999];
 	// 提取路径
-	for(i=4; i<s.length(); i++){
-		if(buf[i] != ' '){
-			chPath[i-4-spaceNum] = buf[i];
+	for(i=0; i<strlen(s); i++){
+		if(s[i] != ' '){
+			chPath[i-spaceNum] = s[i];
 		}
 		else spaceNum++;
 	}
-	chPath[i-4-spaceNum] = '\0';
+	chPath[i-spaceNum] = '\0';
 
 	// 改变路径
 	if(chdir(chPath) == -1){
 		cout<<"ERROR: PATH "<<chPath<<" no exit!"<<endl;
+		flag = 1;
 	}
 	flag = 1;
 }
 
 /*
-	@Param string s : 要创建的目录路径
 	创建目录
+	@Param string s : 要创建的目录路径
 */
 void mymkdir(string s){
 	char p[999];
 	int len, PIndex, index;
 	index = s.find_last_of(' ');
 	PIndex = s.find(" -p ");
-	// 将字符数组变成字符串
+	// 
 	strncpy(p, s.substr(index+1).c_str(), 999);
 	len = strlen(p);
 
@@ -186,4 +215,77 @@ void myrmdir(char* p, int PIndex, int iteration){
 		cout<< p <<" no exit! "<<endl;
 	}
 	flag = 1;
+}
+
+/*
+	@Param string oldName : 
+	@Param string newName : 
+*/
+void myrename(string oldName, string newName){
+	DIR *dp = NULL;
+	struct dirent *dt = NULL;
+	// 打开当前目录的文件夹
+	dp = opendir("./");
+	while(1){
+		dt = readdir(dp);
+
+		if(dt == NULL) break;
+		if(strcmp(dt->d_name, oldName.c_str()) == 0){
+			rename(oldName.c_str(), newName.c_str());
+			flag = 1;
+			break;
+		}
+	}
+	closedir(dp);
+
+	if(!flag){
+		cout<<"ERROR: no this file/dir! "<<endl;
+		flag = 1;
+	}
+}
+
+void mycopy(string name1, string name2){
+	FILE *f1, *f2;
+	if((f1 = fopen(name1.c_str(), "r"))==NULL || (f2 = fopen(name2.c_str(), "w"))==NULL){
+		cout<<"ERROR: "<<name1<<" or "<<name2<<" null! "<<endl;
+		flag = 1;
+		return;
+	}
+
+	char ch = fgetc(f1);
+	while(!feof(f1)){
+		fputc(ch, f2);
+		ch = fgetc(f1);
+	}
+
+	fclose(f1);
+	fclose(f2);
+	flag = 1;
+}
+
+void myfind(char* path, string searchName){
+	DIR *dp = NULL;
+	struct dirent *dt = NULL;
+
+	// 打开当前目录的文件夹
+	dp = opendir(path);
+	
+	while(1){
+		dt = readdir(dp);
+		if(dt == NULL) break;
+		if(strstr(dt->d_name, searchName.c_str()) != NULL){
+			char buffer[1024];
+			getcwd(buffer, 1024);
+			cout<<dt->d_name<<"\t"<<buffer<<endl;
+		}
+	}
+	closedir(dp);
+
+	int len = strlen(path);
+	for(int i=len-1; i>=0; i--){
+		if(path[i] == '/'){
+			path[i] = '\0';
+			myfind(path, searchName);
+		}
+	}
 }
