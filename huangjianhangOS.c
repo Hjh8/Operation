@@ -8,7 +8,7 @@
 /*
 	@Author：codekiang
 	@Time：2020.11.20
-	实现了 ls、pwd、cd、mkdir、rmdir 指令
+	实现了 ls、pwd、cd、mkdir、rmdir、find、rename、copy 指令
 */
 
 using namespace std;
@@ -31,7 +31,7 @@ int main(){
 		string str;
 		flag = 0;
 		char t[9999];
-		// 仿shell输出
+		// 仿终端输出
 		print(getcwd(t, 1024));
 
 		getline(cin, str);
@@ -72,9 +72,8 @@ int main(){
 			string path = str.substr(first+1, second);
 			int third = str.find_last_of(' ');
 			string searchName = str.substr(third+1);
-			char temp[99];
+			char temp[99]; // 存放提取的路径
 			strncpy(temp, path.c_str(), 99);
-
 			myfind(temp, searchName);
 			flag = 1;
 		}
@@ -85,7 +84,7 @@ int main(){
 }
 
 /*
-	仿terminal输出
+	仿终端输出
 	@Param string path : 当前路径
 */
 void print(string path){
@@ -218,8 +217,9 @@ void myrmdir(char* p, int PIndex, int iteration){
 }
 
 /*
-	@Param string oldName : 
-	@Param string newName : 
+	对文件重命名
+	@Param string oldName : 改名前的名称
+	@Param string newName : 改名后的名称
 */
 void myrename(string oldName, string newName){
 	DIR *dp = NULL;
@@ -244,6 +244,11 @@ void myrename(string oldName, string newName){
 	}
 }
 
+/*
+	复制一个已存在的文件
+	@Param string name1 : 要复制的文件名
+	@Param string name2 : 复制后的文件名（可以包含路径）
+*/
 void mycopy(string name1, string name2){
 	FILE *f1, *f2;
 	if((f1 = fopen(name1.c_str(), "r"))==NULL || (f2 = fopen(name2.c_str(), "w"))==NULL){
@@ -263,6 +268,11 @@ void mycopy(string name1, string name2){
 	flag = 1;
 }
 
+/*
+	在路径及其子目录下模糊查找文件
+	@Param char* path : 查找的路径
+	@Param string searchName : 查找的文件名
+*/
 void myfind(char* path, string searchName){
 	DIR *dp = NULL;
 	struct dirent *dt = NULL;
@@ -273,15 +283,17 @@ void myfind(char* path, string searchName){
 	while(1){
 		dt = readdir(dp);
 		if(dt == NULL) break;
+		
 		if(strstr(dt->d_name, searchName.c_str()) != NULL){
 			char buffer[1024];
-			getcwd(buffer, 1024);
+			getcwd(buffer, 1024);  // 获取文件路径
 			cout<<dt->d_name<<"\t"<<buffer<<endl;
 		}
 	}
 	closedir(dp);
 
 	int len = strlen(path);
+	// 有多级目录则递归查找
 	for(int i=len-1; i>=0; i--){
 		if(path[i] == '/'){
 			path[i] = '\0';
